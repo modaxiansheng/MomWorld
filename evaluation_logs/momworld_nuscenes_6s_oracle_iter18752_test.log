@@ -1,0 +1,71 @@
+MomWorld nuScenes 6s strict evaluation log
+==========================================
+
+status: complete
+checkpoint: momworld_nuscenes_6s_oracle_iter_18752.pth
+checkpoint_iteration: 18752
+checkpoint_sha256: 2c003f12a4e956eeb31f286ea01afa195b810bd859e021ae0f0dc1e2f3201376
+source_full_log_sha256: 2a8d7aedd12d937216f06b69f3fb7a06b4dde1b9818cdb761dd67381761a5896
+dataset: nuScenes v1.0-trainval validation
+planning_horizon_seconds: 6.0
+planning_horizon_steps: 12
+sample_interval_seconds: 0.5
+completed_samples: 6019/6019
+failed_samples: 0
+tracebacks: 0
+oom_or_fatal_errors: 0
+
+Planning breakdown
+------------------
+
++-------------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+|   metrics   |  0.5s  |  1.0s  |  1.5s  |  2.0s  |  2.5s  |  3.0s  |  3.5s  |  4.0s  |  4.5s  |  5.0s  |  5.5s  |  6.0s  |  avg   |
++-------------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+|   obj_col   | 1.090% | 1.067% | 1.027% | 0.995% | 0.967% | 0.944% | 0.924% | 0.904% | 0.888% | 0.872% | 0.858% | 0.847% | 1.002% |
+| obj_box_col | 0.038% | 0.019% | 0.076% | 0.166% | 0.281% | 0.417% | 0.615% | 0.825% | 1.077% | 1.358% | 1.665% | 1.966% | 0.201% |
+|      L2     | 0.1678 | 0.2652 | 0.3826 | 0.5213 | 0.6812 | 0.8618 | 1.0614 | 1.2786 | 1.5126 | 1.7625 | 2.0278 | 2.3080 | 0.5494 |
+|   Consist   | 0.1685 | 0.2612 | 0.3594 | 0.4631 | 0.5719 | 0.6856 | 0.8041 | 0.9271 | 1.0542 | 1.1855 | 1.3207 | 1.4593 | 0.4700 |
++-------------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+--------+
+
+The legacy evaluator's avg column above is the mean at 1, 2 and 3 seconds.
+The manuscript reports L2 and box-collision averages over 1--6 seconds and
+TPC over 4--6 seconds.
+
+Full benchmark summary
+----------------------
+
+mAP: 0.4152
+mATE: 0.5718
+mASE: 0.2761
+mAOE: 0.5125
+mAVE: 0.2696
+mAAE: 0.1891
+NDS: 0.5257
+AMOTA: 0.3799
+AMOTP: 1.2487
+RECALL: 0.5285
+MOTAR: 0.6308
+MOTA: 0.3419
+MOTP: 0.6781
+IDS: 975.0
+ped_crossing: 0.5082
+divider: 0.5832
+boundary: 0.5933
+map_mAP: 0.5616
+car_EPA: 0.4978
+pedestrian_EPA: 0.4139
+car_ADE: 0.6272
+pedestrian_ADE: 0.7220
+car_FDE: 0.9797
+pedestrian_FDE: 1.0557
+car_miss_rate: 0.1301
+pedestrian_miss_rate: 0.1474
+legacy_box_collision_summary: 0.161%
+legacy_L2_summary: 0.4945
+
+Final status
+------------
+
+complete: true
+strict_full_validation: true
+checkpoint_matches_reported_best: true

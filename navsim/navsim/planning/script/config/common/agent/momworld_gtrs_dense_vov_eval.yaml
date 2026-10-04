@@ -1,0 +1,45 @@
+# Prediction-only MomWorld config. PDM training targets are intentionally not loaded.
+
+_target_: navsim.agents.momworld.momworld_agent.MomWorldAgent
+_convert_: all
+pdm_gt_path: null
+
+config:
+  _target_: navsim.agents.momworld.momworld_config.MomWorldConfig
+  _convert_: all
+  vocab_path: ${oc.env:NAVSIM_DEVKIT_ROOT}/traj_final/16384.npy
+  ckpt_path: momworld_gtrs_dense_vov
+  vocab_size: 16384
+  seq_len: 2
+  lidar_seq_len: 4
+  sigma: 0.5
+  trajectory_imi_weight: 1.0
+  progress_weight: 2.0
+
+  vocab_dropout: true
+  normalize_vocab_pos: true
+
+  camera_width: 2048
+  camera_height: 512
+  img_vert_anchors: 16
+  img_horz_anchors: 64
+  backbone_type: vov
+  vov_ckpt: ${oc.env:OPENSCENE_DATA_ROOT}/models/dd3d_det_final.pth
+  lr_mult_backbone: 1.0
+
+  world_future_steps: 40
+  world_agent_steps: 8
+  world_dt: 0.1
+  world_flow_steps: 4
+  momentum_persistence_init: 0.9
+  scene_change_accel_threshold: 3.0
+  world_residual_gate_init: -4.0
+
+  trajectory_sampling:
+    _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+    _convert_: all
+    time_horizon: 4
+    interval_length: 0.1
+
+checkpoint_path: ???
+lr: 2e-4

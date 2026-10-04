@@ -1,0 +1,2 @@
+export PYTHONPATH="$(dirname $0)/..":$PYTHONPATH
+python tools/visualization/visualize.py projects/configs/MomAD_small_stage2_roboAD_6s.py 	--result-path work_dirs/MomAD_small_stage2_roboAD_6s/results.pkl

@@ -1,0 +1,17 @@
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.ckpt
+*.pt
+*.pth
+*.pkl
+*.pickle
+*.joblib
+*.npz
+*.npy
+*.csv
+*.log
+outputs/
+experiments/
+caches/
+data/

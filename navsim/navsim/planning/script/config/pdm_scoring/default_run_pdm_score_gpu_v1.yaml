@@ -1,0 +1,22 @@
+hydra:
+  run:
+    dir: ${output_dir}
+  output_subdir: ${output_dir}/code/hydra
+  searchpath:
+    - pkg://navsim.planning.script.config.common
+  job:
+    chdir: false
+
+defaults:
+  - default_common
+  - default_evaluation
+  - ddp
+  - scorer: pdm_scorer
+  - agent: constant_velocity_agent
+  - _self_
+  - override train_test_split: navtest
+
+simulator:
+  _target_: navsim.planning.simulation.planner.pdm_planner.simulation.pdm_simulator.PDMSimulator
+  _convert_: all
+  proposal_sampling: ${proposal_sampling}

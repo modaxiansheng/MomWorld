@@ -1,0 +1,82 @@
+{
+  "release": "momworld-navsim-paper-result1-and-post-paper-optimized",
+  "source_revision": "8953f3acd1ff83bce4ebd83f330742c2396f6b5d",
+  "training_data_boundary": "NAVTRAIN only",
+  "checkpoint": {
+    "name": "momworld_gtrs_all_navtrain_98fb9bb.ckpt",
+    "sha256": "4201d129bfb3a5e00025a12d7921d3280d298c301a5b99f4bcfbd466521e8592",
+    "included": false
+  },
+  "results": {
+    "navsim_v1_navtest": {
+      "score": 0.9020463636307717,
+      "scenarios": 12146,
+      "csv_sha256": "52cad329bfef25b302f6527d0c01c3f6b6adac2d1f45928a1bb4c135361e7b12"
+    },
+    "navsim_v2_navtest": {
+      "score": 0.9010545135192526,
+      "scenarios": 11989,
+      "csv_sha256": "21d64c2d4d5fd6c02adf98c776d9f71bfdd23a551d9fffd87202125c94ad4254"
+    },
+    "navsim_v2_navhard": {
+      "paper_reported_result1": {
+        "manuscript_table": 5,
+        "combined": 0.4277559497825215,
+        "stage1": 0.7337023328387648,
+        "stage2": 0.5679657176434654,
+        "stage1_metrics": {
+          "no_at_fault_collision": 0.9688888888888889,
+          "drivable_area_compliance": 0.9355555555555556,
+          "driving_direction_compliance": 0.9977777777777778,
+          "traffic_light_compliance": 0.9977777777777778,
+          "ego_progress": 0.8036405366925962,
+          "time_to_collision": 0.9688888888888889,
+          "lane_keeping": 0.9644444444444444,
+          "history_comfort": 0.9755555555555555,
+          "two_frame_extended_comfort": 0.6
+        },
+        "stage2_metrics": {
+          "no_at_fault_collision": 0.8644121320298176,
+          "drivable_area_compliance": 0.8820404082251109,
+          "driving_direction_compliance": 0.9418986317698694,
+          "traffic_light_compliance": 0.9826115322131169,
+          "ego_progress": 0.8166788825021591,
+          "time_to_collision": 0.8438997008913939,
+          "lane_keeping": 0.5526428180480907,
+          "history_comfort": 0.9699806785118246,
+          "two_frame_extended_comfort": 0.546596276969078
+        },
+        "scenarios": 5912,
+        "csv_sha256": "b4c0a4baff0b4d1055b4be5a85a93b797ce31b4ada8beb260c24175df29fae05"
+      },
+      "post_paper_optimized": {
+        "combined": 0.4281794504595703,
+        "stage1": 0.7337023328387648,
+        "stage2": 0.568266315498854,
+        "stage2_ego_progress": 0.8172219891722398,
+        "stage2_time_to_collision": 0.8414525443774834,
+        "stage2_lane_keeping": 0.555028170898645,
+        "stage2_two_frame_extended_comfort": 0.5562940122260941,
+        "scenarios": 5912,
+        "csv_sha256": "719e3ec2186066c07089e0083359390d204b5ffea26a469465e0af18bbe51627",
+        "pairwise_gate_sha256": "a5038efd255da7698d847c1b7d96ea50778a055ec52c2e5310076ff6ddd1df1e",
+        "trajectory_sha256": "74077c26b512f4c3b8e194872b458133057c1920ee0211910f39376d1a5dfcfb",
+        "pair_consistency_fraction": 0.1,
+        "strict_validation_passed": true
+      },
+      "absolute_improvement": 0.0004235006770488
+    }
+  },
+  "excluded": [
+    "credentials and private paths",
+    "datasets and benchmark token lists",
+    "checkpoints and fitted state files",
+    "metric and feature caches",
+    "generated trajectories",
+    "raw CSV and per-scene benchmark scores"
+  ],
+  "tests": {
+    "focused_regressions": 27,
+    "passed": 27
+  }
+}
