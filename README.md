@@ -56,7 +56,7 @@ The following results are from the MomWorld manuscript's six-second nuScenes val
 | MomAD | 1.19 | 1.45 | 1.61 | 1.42 | **7.8** |
 | **MomWorld** | **0.93** | **1.19** | **1.46** | **1.19** | 7.2 |
 
-For L2 and box collision, `Avg.` is the arithmetic mean of the reported 1--6 second horizons; TPC `Avg.` is the mean over 4--6 seconds. MomAD and MomWorld FPS were both measured on an RTX 4090. The released checkpoint was independently audited on all 6,019 nuScenes validation samples: its exact 6-second values are 2.3080 m L2, 1.966% box collision and 1.4593 m TPC, which round to the manuscript values above.
+For L2 and box collision, manuscript `Avg.` is the arithmetic mean of the reported 1--6 second horizons; TPC `Avg.` is the mean over 4--6 seconds. The manuscript reports FPS on an RTX 4090. These are manuscript-reported results, not measurements of the new current-ego adapter below. The historical checkpoint log is retained as provenance, but is not evidence that the current unscaled evaluator or a newly trained adapter reproduces this table.
 
 ## MomWorld nuScenes qualitative results
 
@@ -76,11 +76,99 @@ The official paper visualization shows four six-second nuScenes cases covering a
 
 The `MomAD` strings in these paths identify the inherited backbone and historical filenames; they do not denote the paper-final MomWorld module release.
 
+### Optional 10D current-ego conditioning
+
+The oracle-backup V2 planning head now supports `use_current_ego_status=True`.
+It encodes measured acceleration xyz, angular rate xyz, velocity xyz and
+steering angle (in that order, in the vehicle ego frame) into a residual on
+the current ego feature **before** planning/world-model interactions. The
+new module reads `ego_status`, not future trajectory labels. Its output
+projection starts at zero; the default option is `False`, preserving the
+existing model parameter layout. Zero initialization is compatibility, not
+evidence of a learned improvement. No adapter-trained checkpoint is released
+by this code update.
+
+- Encoder: `open_loop/projects/mmdet3d_plugin/models/motion/current_ego_state.py`
+- Opt-in example: `open_loop/projects/configs/MomWorld_current_ego_6s_example.py`
+- Checked model-only preparation: `open_loop/tools/prepare_current_ego_config.py`
+
+The example inherits the public prototype's optimizer and schedule; it is
+**not** a configuration for resuming any archived training run. For a new
+experiment, prepare a separate initialization checkpoint and generated config
+from the baseline you actually intend to use. Run from `open_loop` with the
+project's existing MMCV/MMDetection environment and a trusted local checkpoint:
+
+```bash
+cd open_loop
+new_run="$(pwd)/work_dirs/momworld_current_ego_new"
+python tools/prepare_current_ego_config.py \
+  --base-config projects/configs/MomAD_small_stage2_MomAD_World_model_6s_v2_oracle_mode_reg02_resume_repro.py \
+  --work-dir "$new_run" \
+  --source-checkpoint checkpoints/momworld_nuscenes_6s_oracle_iter_18752.pth \
+  --output-checkpoint "$new_run/init.pth" \
+  --output-config "$new_run/config.py"
+```
+
+This CPU-only command prepares artifacts; it does not launch training. It
+rejects incompatible same-name planning-head implementations, missing input
+state, nonzero lidar rotation without ego-frame handling, output overwrites
+and writes into the baseline run. Relative baseline `work_dir` paths resolve
+against the working directory; use `--path-base` explicitly when preparing for
+a different path namespace. All model-input pipelines must collect
+`ego_status`; the freeze hook must include `motion_plan_head.ego_state_encoder`.
+The generated config retains the selected baseline's hyperparameters and
+existing trainable keywords, adds the encoder, and clears `resume_from`.
+
+The strict warm-start loader accepts either all old model tensors plus a
+wholly new encoder, or a complete already-conditioned model. It preserves
+module-version metadata and rejects unrelated missing/unexpected tensors,
+partial encoder state and shape mismatches. Only the known nonpersistent
+prediction cache may be removed. It does **not** restore an optimizer, AMP
+scaler, RNG, worker prefetch or temporal cache, and must not be used as a
+training-continuation mechanism.
+
+The inherited CAN converter uses **nearest-timestamp**, not guaranteed
+past-only, alignment and fills missing CAN records with zeros. Audit coverage
+and timing before claiming strict causality; do not replace missing values
+with future labels or reinterpret ego-frame vectors as lidar-frame vectors.
+
+### nuScenes metric protocol
+
+Both six-second evaluators return unscaled L2/TPC in metres and collision
+fractions. Percent conversion happens only in the printed collision table.
+The 12 half-second entries are per-step measurements; reported horizon
+columns are their **cumulative prefix means**, not instantaneous endpoint
+errors. Existing bare keys such as `L2` keep the historical mean of cumulative
+1, 2 and 3 seconds. Explicit keys `L2_cumulative_1s` through
+`L2_cumulative_6s`, `L2_cumulative_mean_1s_to_6s` and
+`L2_cumulative_mean_4s_to_6s` expose the separate aggregates; the same naming
+applies to `obj_box_col`, `obj_col` and `Consist`. Use the six-horizon mean for
+L2/collision comparisons and the 4--6s mean for the manuscript's TPC column.
+The world-model evaluator's existing `*_at_6s` is an instantaneous per-step
+value, **not** the cumulative 6s value. Its scene/pose-aligned consistency
+protocol remains distinct from the legacy `roboad` evaluator. Record which
+evaluator and data/checkpoint/config versions produced any comparison.
+
+Fully masked future trajectories are excluded from metric aggregation, not
+failed predictions. Empty valid sets or nonfinite metrics are rejected rather
+than reported as successful zeros. A historical log, rounded manuscript row,
+unit test or model-only migration is not a fresh full-validation result.
+
+CPU regression tests (no dataset, checkpoint download or GPU required):
+
+```bash
+python -B -m unittest discover -s open_loop/tests -p 'test_*.py' -v
+```
+
+Run this command from the repository root in an environment with PyTorch and
+NumPy. Planning-head/evaluator tests use explicit test doubles for external
+dependencies; they are not a complete MMCV build or nuScenes inference run.
+
 ## Checkpoint
 
 The audited MomWorld-Oracle 6s prototype checkpoint is hosted separately so that Git clones stay lightweight.
 
-The [best-checkpoint test log](evaluation_logs/momworld_nuscenes_6s_oracle_iter18752_test.log) records the matching strict evaluation: 6,019/6,019 validation samples completed, zero failed samples, and no traceback, OOM or fatal error. The published log SHA256 is `cd94d0853776e183a9cb4a94560860f5dbca4194a68a4fa74b7448b1cddcb3d7`; it also records the original full console-log SHA256 for provenance.
+The [historical best-checkpoint test log](evaluation_logs/momworld_nuscenes_6s_oracle_iter18752_test.log) records 6,019/6,019 validation predictions completed, zero failed samples, and no traceback, OOM or fatal error. The published log SHA256 is `cd94d0853776e183a9cb4a94560860f5dbca4194a68a4fa74b7448b1cddcb3d7`; it also records the original full console-log SHA256 for provenance. Prediction count is not metric-valid count. This historical log is not a fresh evaluation of the current unscaled code or the optional ego-state adapter.
 
 | Checkpoint | Iteration | Size | SHA256 |
 | --- | ---: | ---: | --- |

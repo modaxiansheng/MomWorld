@@ -10,6 +10,9 @@ from mmdet.datasets import build_dataset, build_dataloader
 
 from projects.mmdet3d_plugin.datasets.utils import box3d_to_corners
 from nuscenes.nuscenes import NuScenes
+from .planning_metric_summary import (
+    cumulative_metric_summary, validate_metric_values, validate_valid_samples,
+)
 
 
 def get_lidar_to_global(info):
@@ -187,6 +190,7 @@ class PlanningMetric():
         self.total +=len(trajs)
 
     def compute(self):
+        validate_valid_samples(self.total.item())
         denominator = self.total.clamp(min=1)
         return {
             'obj_col': self.obj_col / denominator,
@@ -240,6 +244,8 @@ def planning_eval_MomAD_World_model_6s(results, eval_config, logger):
         )
         last_final_planning = pred_sdc_traj[:, :n_future, :2].clone()
         last_info = current_info
+    valid_samples = planning_metrics.total.item()
+    consistency_valid_samples = planning_metrics.consist_total.item()
     planning_results = planning_metrics.compute()
     planning_metrics.reset()
     from prettytable import PrettyTable
@@ -250,6 +256,8 @@ def planning_eval_MomAD_World_model_6s(results, eval_config, logger):
         "%.1fs" % ((i + 1) * 0.5) for i in range(n_future)
     ] + ["avg@1,2,3s"]
     for key in planning_results.keys():
+        metric_valid_samples = consistency_valid_samples if key == 'Consist' else valid_samples
+        validate_metric_values(planning_results[key].tolist(), metric_valid_samples)
         raw_value = np.asarray(planning_results[key].tolist(), dtype=np.float64)
         cumulative_value = np.cumsum(raw_value) / np.arange(1, n_future + 1)
         short_avg = float(np.mean(cumulative_value[[1, 3, 5]]))
@@ -262,6 +270,9 @@ def planning_eval_MomAD_World_model_6s(results, eval_config, logger):
         cumulative_name = 'ADE' if key in ('L2', 'Consist') else 'cumulative'
         metric_dict[key + '_' + cumulative_name + '_4s_5s_6s'] = long_avg
         metric_dict[key + '_at_6s'] = exact_6s
+        metric_dict.update(cumulative_metric_summary(
+            key, cumulative_value.tolist(), metric_valid_samples,
+        ))
         # import pdb; pdb.set_trace()
         row_value = []
         row_value.append(key)
