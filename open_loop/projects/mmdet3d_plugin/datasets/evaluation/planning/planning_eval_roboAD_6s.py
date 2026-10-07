@@ -9,6 +9,9 @@ from mmdet.datasets import build_dataset, build_dataloader
 
 from projects.mmdet3d_plugin.datasets.utils import box3d_to_corners
 from nuscenes.nuscenes import NuScenes
+from .planning_metric_summary import (
+    cumulative_metric_summary, validate_metric_values, validate_valid_samples,
+)
 
 def check_collision(ego_box, boxes):
     '''
@@ -139,6 +142,7 @@ class PlanningMetric():
         self.total +=len(trajs)
 
     def compute(self):
+        validate_valid_samples(self.total.item())
         return {
             'obj_col': self.obj_col / self.total,
             'obj_box_col': self.obj_box_col / self.total,
@@ -168,6 +172,7 @@ def planning_eval_roboAD_6s(results, eval_config, logger):
         pred_sdc_traj = res['img_bbox']['final_planning'].unsqueeze(0)
         planning_metrics.update(pred_sdc_traj[:, :12, :2], sdc_planning[0,:, :12, :2], sdc_planning_mask[0,:, :12, :2], fut_boxes,last_final_planning)
         last_final_planning=pred_sdc_traj[:, :12, :2]
+    valid_samples = planning_metrics.total.item()
     planning_results = planning_metrics.compute()
     planning_metrics.reset()
     from prettytable import PrettyTable
@@ -177,11 +182,12 @@ def planning_eval_roboAD_6s(results, eval_config, logger):
     planning_tab.field_names = [
     "metrics", "0.5s", "1.0s", "1.5s", "2.0s", "2.5s", "3.0s","3.5s","4.0s","4.5s","5.0s","5.5s","6.0s","avg"]
     for key in planning_results.keys():
-        value = planning_results[key].tolist()
+        value = validate_metric_values(planning_results[key].tolist(), valid_samples)
         new_values = []
         for i in range(len(value)):
             new_values.append(np.array(value[:i+1]).mean())
         value = new_values
+        metric_dict.update(cumulative_metric_summary(key, value, valid_samples))
         avg = [value[1], value[3], value[5]]
         avg = sum(avg) / len(avg)
         value.append(avg)

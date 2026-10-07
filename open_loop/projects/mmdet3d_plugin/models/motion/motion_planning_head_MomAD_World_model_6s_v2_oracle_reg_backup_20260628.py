@@ -35,6 +35,7 @@ from ..blocks import linear_relu_ln
 from ..instance_bank import topk
 from .latent_world_model_MomAD_World_model_6s import LatentWorldModelMomAD6s
 from .next_token_prediction import NextTokenPredictor
+from .current_ego_state import CurrentEgoStateEncoder
 
 
 @HEADS.register_module()
@@ -83,6 +84,7 @@ class MotionPlanningHead_MomAD_World_model_6s_V2(BaseModule):
         eval_planning_branch="final",
         time_adaptive_fusion=False,
         consistency_aware_fusion=False,
+        use_current_ego_status=False,
     ):
         super(MotionPlanningHead_MomAD_World_model_6s_V2, self).__init__()
         self.fut_ts = fut_ts
@@ -106,6 +108,12 @@ class MotionPlanningHead_MomAD_World_model_6s_V2(BaseModule):
         self.eval_planning_branch = eval_planning_branch
         self.time_adaptive_fusion = time_adaptive_fusion
         self.consistency_aware_fusion = consistency_aware_fusion
+        # Opt-in only: archived configurations retain their parameter keyset
+        # and original behavior. New experiments collect ego_status in BOTH
+        # training and inference and train the new encoder explicitly.
+        self.use_current_ego_status = use_current_ego_status
+        if use_current_ego_status:
+            self.ego_state_encoder = CurrentEgoStateEncoder(embed_dims)
         # =========== build modules ===========
         def build(cfg, registry):
             if cfg is None:
@@ -364,6 +372,13 @@ class MotionPlanningHead_MomAD_World_model_6s_V2(BaseModule):
                 **kwargs,
             )
         )
+    def _condition_ego_feature(self, ego_feature, metas):
+        if not self.use_current_ego_status:
+            return ego_feature
+        if "ego_status" not in metas:
+            raise KeyError("Direct ego conditioning requires current ego_status at inference and training")
+        return ego_feature + self.ego_state_encoder(metas["ego_status"], ego_feature)
+
     def forward(
         self, 
         det_output,
@@ -423,6 +438,10 @@ class MotionPlanningHead_MomAD_World_model_6s_V2(BaseModule):
             mask,
             anchor_handler,
         )
+        # Current measured state enters before ego graph interactions and all
+        # base/world/refined planning branches. Predicted temporal status and
+        # lidar-anchor velocity semantics remain unchanged.
+        ego_feature = self._condition_ego_feature(ego_feature, metas)
         ego_anchor_embed = anchor_encoder(ego_anchor)#torch.Size([6, 1, 256])
         temp_anchor_embed = anchor_encoder(temp_anchor)#torch.Size([6, 901, 1, 256])
         temp_instance_feature = temp_instance_feature.flatten(0, 1)#torch.Size([5406, 1, 256])
